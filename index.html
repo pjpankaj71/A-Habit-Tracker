@@ -10,9 +10,6 @@
         --yellow: #FFD500;
         --black: #000000;
         --bg-light: #ffffff;
-        --bg-dark: #1c1c1c;
-        --text-light: #ffffff;
-        --text-dark: #000000;
         --radius: 14px;
         --shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
@@ -20,7 +17,6 @@
         margin: 0;
         font-family: 'Segoe UI', sans-serif;
         background: linear-gradient(to bottom, #fffdf5, #fff8d1);
-        color: var(--text-dark);
         max-width: 100%;
         overflow-x: hidden;
     }
@@ -29,52 +25,28 @@
         margin: auto;
         padding: 1rem;
     }
-    header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
+    header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
     .logo {
         background: var(--yellow);
         color: var(--black);
         font-weight: bold;
         font-size: 1.2rem;
-        width: 50px;
-        height: 50px;
+        width: 50px; height: 50px;
         border-radius: var(--radius);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex; align-items: center; justify-content: center;
         box-shadow: var(--shadow);
     }
-    header h1 {
-        font-size: 1.3rem;
-        margin: 0;
-    }
-    header p {
-        font-size: 0.85rem;
-        margin: 0;
-        color: #555;
-    }
+    h1 { margin: 0; font-size: 1.3rem; }
+    p { margin: 0; font-size: 0.85rem; color: #555; }
     .btn {
-        display: inline-block;
         padding: 0.8rem 1rem;
         border: none;
         border-radius: var(--radius);
         font-weight: bold;
         cursor: pointer;
-        text-align: center;
     }
-    .btn-yellow {
-        background: var(--yellow);
-        color: var(--black);
-        box-shadow: var(--shadow);
-    }
-    .btn-outline {
-        background: transparent;
-        border: 2px solid #ddd;
-    }
+    .btn-yellow { background: var(--yellow); color: var(--black); box-shadow: var(--shadow); }
+    .btn-outline { background: transparent; border: 2px solid #ddd; }
     section {
         background: var(--bg-light);
         padding: 1rem;
@@ -97,7 +69,6 @@
     }
     .weekly-overview {
         display: flex;
-        justify-content: space-between;
         gap: 0.5rem;
         overflow-x: auto;
     }
@@ -136,36 +107,88 @@
             <p>Sleek habit tracker — built for Telegram. Data stored locally.</p>
         </div>
     </header>
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-        <button class="btn btn-yellow">+ Add Habit</button>
-        <button class="btn btn-outline">Clear data</button>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button id="addHabitBtn" class="btn btn-yellow">+ Add Habit</button>
+        <button id="clearDataBtn" class="btn btn-outline">Clear data</button>
     </div>
-    <section>
+    <section id="habitList">
         <h2>Your Habits</h2>
         <p>No habits yet — add one using the button above.</p>
     </section>
-    <section>
+    <section id="habitForm" style="display:none;">
         <h2>Add / Edit Habit</h2>
-        <input type="text" placeholder="Habit name (e.g., 'Read 20 min')" style="width:100%;padding:0.5rem;border-radius:var(--radius);border:1px solid #ccc;">
-        <div class="emoji-picker">
-            <button>💧</button><button>🧘</button><button>💻</button><button>🏃</button>
-            <button>📚</button><button>🍎</button><button>🔥</button><button>🔔</button>
-        </div>
-        <button class="btn btn-yellow" style="width:100%;">Save</button>
+        <input type="text" id="habitName" placeholder="Habit name (e.g., 'Read 20 min')" style="width:100%;padding:0.5rem;border-radius:var(--radius);border:1px solid #ccc;">
+        <div class="emoji-picker" id="emojiPicker"></div>
+        <button id="saveHabitBtn" class="btn btn-yellow" style="width:100%;">Save</button>
     </section>
     <section>
         <h2>Weekly Overview</h2>
-        <div class="weekly-overview">
-            <div class="day">Sun<br>0</div>
-            <div class="day">Mon<br>0</div>
-            <div class="day">Tue<br>0</div>
-            <div class="day">Wed<br>0</div>
-            <div class="day">Thu<br>0</div>
-            <div class="day">Fri<br>0</div>
-            <div class="day">Sat<br>0</div>
-        </div>
+        <div id="weeklyOverview" class="weekly-overview"></div>
     </section>
 </div>
 <div class="toast" id="toast">Great job! 🎉</div>
+
+<script>
+    const habits = JSON.parse(localStorage.getItem('habits') || '[]');
+    let selectedEmoji = '💧';
+    const emojis = ['💧','🧘','💻','🏃','📚','🍎','🔥','🔔'];
+
+    const habitList = document.getElementById('habitList');
+    const habitForm = document.getElementById('habitForm');
+    const emojiPicker = document.getElementById('emojiPicker');
+    const toast = document.getElementById('toast');
+
+    function renderHabits(){
+        if(habits.length === 0){
+            habitList.innerHTML = `<h2>Your Habits</h2><p>No habits yet — add one using the button above.</p>`;
+        } else {
+            habitList.innerHTML = `<h2>Your Habits</h2>` + habits.map(h => `<div>${h.emoji} ${h.name}</div>`).join('');
+        }
+    }
+    function renderWeeklyOverview(){
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const today = new Date();
+        let html = '';
+        for(let i=0;i<7;i++){
+            const date = new Date();
+            date.setDate(today.getDate() - today.getDay() + i);
+            html += `<div class="day">${days[i]}<br>${date.getDate()}</div>`;
+        }
+        document.getElementById('weeklyOverview').innerHTML = html;
+    }
+    function showToast(msg){
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(()=>toast.style.display='none', 2000);
+    }
+    document.getElementById('addHabitBtn').addEventListener('click', ()=>{
+        habitForm.style.display = 'block';
+    });
+    document.getElementById('clearDataBtn').addEventListener('click', ()=>{
+        localStorage.clear();
+        habits.length = 0;
+        renderHabits();
+        showToast('Data cleared');
+    });
+    document.getElementById('saveHabitBtn').addEventListener('click', ()=>{
+        const name = document.getElementById('habitName').value.trim();
+        if(!name) return showToast('Enter a habit name');
+        habits.push({name, emoji: selectedEmoji});
+        localStorage.setItem('habits', JSON.stringify(habits));
+        renderHabits();
+        habitForm.style.display = 'none';
+        document.getElementById('habitName').value = '';
+        showToast('Habit added');
+    });
+    emojis.forEach(e=>{
+        const btn = document.createElement('button');
+        btn.textContent = e;
+        btn.addEventListener('click', ()=>selectedEmoji=e);
+        emojiPicker.appendChild(btn);
+    });
+
+    renderHabits();
+    renderWeeklyOverview();
+</script>
 </body>
 </html>
