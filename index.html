@@ -1,671 +1,228 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Daily Check-In — Habit Tracker (Telegram Mini App)</title>
-
-  <!-- Telegram Web App SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <style>
-    /* ---------- Palette (Yellow primary, Black secondary) ---------- */
-    :root{
-      --bg: #fffdf8;               /* very light */
-      --card: #ffffff;
-      --text: #0b0b0b;            /* near-black */
-      --muted: #6b6b6b;
-      --accent: #ffd400;          /* bright yellow primary */
-      --accent-contrast: #000000; /* black on yellow */
-      --accent-dark: #f2c100;
-      --success: #18a06b;
-      --danger: #e05555;
-      --glass: rgba(255,255,255,0.6);
-      --radius: 14px;
-      --gap: 12px;
-      --maxw: 800px;
-      --body-padding: 18px;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Check-In</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --yellow: #ffd600;
+    --black: #000000;
+    --bg-light: #ffffff;
+    --bg-dark: #1c1c1c;
+    --text-light: #000000;
+    --text-dark: #ffffff;
+  }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #fff, #fff7e0);
+    color: var(--black);
+  }
+  .container {
+    max-width: 800px;
+    margin: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo-icon {
+    background: var(--yellow);
+    color: var(--black);
+    font-weight: bold;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+  }
+  .card {
+    background: var(--bg-light);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .btn-yellow {
+    background: var(--yellow);
+    color: var(--black);
+    font-weight: bold;
+  }
+  .btn-clear {
+    background: #fff;
+    color: var(--black);
+    border: 1px solid #ccc;
+  }
+  .habit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .habit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: #f9f9f9;
+  }
+  .weekly-overview {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .week-day {
+    min-width: 60px;
+    text-align: center;
+  }
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+  }
+  .emoji-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .emoji-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+  }
+  @media (min-width: 600px) {
+    .container {
+      flex-direction: row;
     }
-
-    /* Dark theme override (Telegram dark scheme) */
-    .tg-theme-dark {
-      --bg: #070707;
-      --card: #0d0d0d;
-      --text: #f6f6f6;
-      --muted: #bfbfbf;
-      --accent: #ffd400;
-      --accent-contrast: #000000;
-      --accent-dark: #f2c100;
-      --glass: rgba(255,255,255,0.03);
+    .habit-section, .add-section {
+      flex: 1 1 50%;
     }
-
-    /* ---------- Base ---------- */
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, var(--bg) 0%, rgba(255,235,160,0.03) 60%);
-      color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    /* Center container - mobile-first, but looks like a clean landing card inside Telegram */
-    .app {
-      max-width:var(--maxw);
-      margin: 18px auto;
-      padding: var(--body-padding);
-      box-sizing:border-box;
-      min-height: calc(100vh - 36px);
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-
-    header{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:6px;
-    }
-
-    .brand {
-      display:flex;
-      gap:14px;
-      align-items:center;
-    }
-
-    .logo {
-      height:58px;
-      width:58px;
-      border-radius:12px;
-      display:inline-grid;
-      place-items:center;
-      font-weight:800;
-      font-size:18px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-      color:var(--accent-contrast);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-      border: 2px solid rgba(0,0,0,0.04);
-    }
-
-    h1{
-      font-size:20px;
-      margin:0;
-      letter-spacing:-0.3px;
-    }
-    p.lead {
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    .controls {
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-
-    /* Primary yellow buttons with black text */
-    button.btn {
-      border:0;
-      background: linear-gradient(180deg, var(--accent), var(--accent-dark));
-      color:var(--accent-contrast);
-      padding:10px 14px;
-      border-radius:12px;
-      font-weight:700;
-      font-size:14px;
-      cursor:pointer;
-      box-shadow: 0 10px 24px rgba(255,212,0,0.12);
-    }
-    button.ghost{
-      background:transparent;
-      color:var(--text);
-      border:1px solid rgba(0,0,0,0.08);
-      box-shadow:none;
-      padding:8px 12px;
-      border-radius:10px;
-      font-weight:600;
-      cursor:pointer;
-    }
-
-    /* ---------- Layout ---------- */
-    main {
-      display:grid;
-      gap:14px;
-      grid-template-columns: 1fr;
-      align-items:start;
-    }
-
-    .card {
-      background:var(--card);
-      padding:14px;
-      border-radius:var(--radius);
-      box-shadow: 0 10px 30px rgba(11,11,11,0.04);
-      border: 1px solid rgba(0,0,0,0.03);
-    }
-
-    /* Two-column on larger screens */
-    @media (min-width:640px){
-      main { grid-template-columns: 1fr 360px; }
-    }
-
-    /* ---------- Habit list ---------- */
-    .habit-list {
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      margin-top:6px;
-    }
-
-    .habit {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      padding:12px;
-      border-radius:12px;
-      transition: transform .14s ease, box-shadow .14s ease;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-    }
-    .habit:hover { transform: translateY(-4px); box-shadow: 0 8px 26px rgba(11,11,11,0.06); }
-
-    .left {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      min-width:0;
-    }
-
-    .habit-icon{
-      width:64px;
-      height:64px;
-      border-radius:14px;
-      display:grid;
-      place-items:center;
-      font-size:26px;
-      background:linear-gradient(180deg, rgba(0,0,0,0.03), rgba(0,0,0,0.02));
-      color:var(--text);
-      flex-shrink:0;
-      border: 1px solid rgba(0,0,0,0.03);
-    }
-
-    .habit-meta {
-      min-width:0;
-    }
-
-    .habit-meta h3{
-      margin:0;
-      font-size:16px;
-      font-weight:800;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
-    }
-    .habit-meta p{
-      margin:6px 0 0 0;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .right {
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-
-    .streak {
-      background: linear-gradient(180deg, rgba(255,244,204,0.9), rgba(255,235,140,0.6));
-      padding:8px 10px;
-      border-radius:12px;
-      font-weight:800;
-      color:var(--accent-contrast);
-      font-size:13px;
-      border: 1px solid rgba(0,0,0,0.06);
-      min-width:110px;
-      text-align:center;
-    }
-
-    .check-btn {
-      border-radius:12px;
-      padding:10px 12px;
-      border:0;
-      background: var(--accent);
-      color: var(--accent-contrast);
-      font-weight:800;
-      cursor:pointer;
-      box-shadow: 0 8px 20px rgba(255,196,0,0.12);
-    }
-    .check-btn[disabled]{
-      opacity:0.5;
-      cursor:not-allowed;
-      box-shadow:none;
-      filter:grayscale(0.2);
-    }
-
-    .icon-btn {
-      border:0;
-      background:transparent;
-      font-size:16px;
-      cursor:pointer;
-      padding:6px;
-      border-radius:8px;
-      color:var(--muted);
-    }
-
-    /* ---------- Add form ---------- */
-    .add-form {
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:wrap;
-      margin-top:6px;
-    }
-
-    input[type="text"], select {
-      padding:12px;
-      border-radius:12px;
-      border:1px solid rgba(0,0,0,0.06);
-      min-width:0;
-      flex:1 1 auto;
-      font-size:14px;
-      background:transparent;
-      color:var(--text);
-      outline:none;
-    }
-    input[type="text"]:focus { box-shadow: 0 6px 18px rgba(255,212,0,0.08); border-color: rgba(0,0,0,0.12); }
-
-    .emoji-picker {
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .emoji-picker button {
-      padding:8px;
-      border-radius:10px;
-      border:1px solid rgba(0,0,0,0.04);
-      cursor:pointer;
-      background:transparent;
-      font-size:18px;
-      min-width:44px;
-      min-height:44px;
-    }
-    .emoji-picker button.selected {
-      background: linear-gradient(180deg, rgba(255,244,204,0.95), rgba(255,235,140,0.8));
-      border: 1px solid rgba(0,0,0,0.06);
-      box-shadow: 0 8px 20px rgba(255,196,0,0.08);
-    }
-
-    /* ---------- Weekly calendar ---------- */
-    .week-grid {
-      display:grid;
-      grid-template-columns: repeat(7,1fr);
-      gap:8px;
-      margin-top:8px;
-    }
-
-    .day {
-      padding:10px 6px;
-      border-radius:10px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      text-align:center;
-      font-size:12px;
-      border:1px solid rgba(0,0,0,0.03);
-    }
-    .day .dot {
-      width:18px;
-      height:18px;
-      border-radius:999px;
-      margin:8px auto 0 auto;
-      background:#efefef;
-      border:1px solid rgba(0,0,0,0.04);
-    }
-    .day.done .dot { background: var(--accent); box-shadow: 0 8px 22px rgba(255,196,0,0.18); border: 1px solid rgba(0,0,0,0.06); }
-    .day .count { font-size:11px; color:var(--muted); margin-top:6px; }
-
-    /* ---------- Toast ---------- */
-    #toast {
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%);
-      bottom:90px;
-      background: var(--text);
-      color:var(--accent-contrast);
-      padding:10px 16px;
-      border-radius:999px;
-      display:none;
-      z-index:9999;
-      font-weight:800;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-    }
-
-    /* bottom yellow gradient (decorative, pointer-events none) */
-    .bottom-grad {
-      position:fixed;
-      left:0;
-      right:0;
-      bottom:0;
-      height:130px;
-      pointer-events:none;
-      background: linear-gradient(180deg, rgba(255,212,64,0) 0%, rgba(255,212,64,0.06) 20%, rgba(255,196,0,0.12) 45%, rgba(255,180,0,0.22) 70%, rgba(255,160,0,0.36) 100%);
-      z-index:0;
-    }
-
-    .muted {
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    /* tiny screen polish */
-    @media (max-width:420px){
-      .logo { height:52px; width:52px; font-size:16px; }
-      .streak { display:none; } /* save space */
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <div id="toast" role="status" aria-live="polite"></div>
-
-  <div class="app" id="app">
-    <header>
-      <div class="brand">
-        <div class="logo">DC</div>
+<div class="container">
+  <div class="habit-section card">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">DC</div>
         <div>
-          <h1>Daily Check-In</h1>
-          <p class="lead">Sleek habit tracker — built for Telegram. Data stored locally.</p>
+          <h2>Daily Check-In</h2>
+          <small>Sleek habit tracker — built for Telegram.</small>
         </div>
       </div>
-
-      <div class="controls">
-        <button id="btnAdd" class="btn">+ Add Habit</button>
-        <button id="btnClear" class="ghost">Clear data</button>
+      <div>
+        <button class="btn btn-yellow" onclick="showAddForm()">+ Add Habit</button>
+        <button class="btn btn-clear" onclick="clearData()">Clear data</button>
       </div>
-    </header>
-
-    <main>
-      <!-- Left column: habit list -->
-      <section class="card" id="leftCol" aria-labelledby="your-habits">
-        <h3 id="your-habits" style="margin-top:0;">Your Habits</h3>
-        <div id="noHabits" class="muted">No habits yet — add one using the <strong>Add Habit</strong> button.</div>
-        <div class="habit-list" id="habitList" aria-live="polite"></div>
-        <div style="margin-top:12px;" class="muted">Note: Data saved locally & scoped to your Telegram user ID. Clearing browser data will reset progress.</div>
-      </section>
-
-      <!-- Right column: add form + weekly calendar -->
-      <aside class="card" id="rightCol" aria-labelledby="add-edit">
-        <div id="addSection">
-          <h4 id="add-edit" style="margin:0 0 8px 0;">Add / Edit Habit</h4>
-          <form id="habitForm" class="add-form" onsubmit="return false;">
-            <input id="habitName" type="text" placeholder="Habit name (e.g., 'Read 20 min')" required />
-            <input id="habitIdHidden" type="hidden" value="" />
-            <button id="saveHabitBtn" class="btn" type="submit">Save</button>
-          </form>
-
-          <div class="emoji-picker" id="emojiPicker" aria-hidden="false" aria-label="Emoji picker">
-            <!-- Emoji choices -->
-            <button data-emoji="💧" title="Hydrate">💧</button>
-            <button data-emoji="🧘" title="Meditate">🧘</button>
-            <button data-emoji="💻" title="Work">💻</button>
-            <button data-emoji="🏃" title="Run">🏃</button>
-            <button data-emoji="📚" title="Read">📚</button>
-            <button data-emoji="🛌" title="Sleep">🛌</button>
-            <button data-emoji="🍎" title="Eat Healthy">🍎</button>
-            <button data-emoji="✍️" title="Write">✍️</button>
-            <button data-emoji="🔔" title="Remind">🔔</button>
-          </div>
-
-          <div style="margin-top:10px;" id="globalStats" class="muted"></div>
-        </div>
-
-        <hr style="opacity:0.06;margin:14px 0;" />
-
-        <div>
-          <h4 style="margin:0 0 8px 0;">Weekly Overview</h4>
-          <div class="week-grid" id="weekGrid" aria-live="polite" aria-label="Weekly summary"></div>
-        </div>
-      </aside>
-    </main>
+    </div>
+    <div id="habitList" class="habit-list"></div>
   </div>
+  
+  <div class="add-section card">
+    <h3>Add / Edit Habit</h3>
+    <input type="text" id="habitName" placeholder="Habit name (e.g., 'Read 20 min')">
+    <div class="emoji-picker">
+      <button class="emoji-btn" onclick="selectIcon('💧')">💧</button>
+      <button class="emoji-btn" onclick="selectIcon('🏃')">🏃</button>
+      <button class="emoji-btn" onclick="selectIcon('💻')">💻</button>
+      <button class="emoji-btn" onclick="selectIcon('📚')">📚</button>
+      <button class="emoji-btn" onclick="selectIcon('🛏')">🛏</button>
+    </div>
+    <button class="btn btn-yellow" style="margin-top:0.5rem;" onclick="saveHabit()">Save</button>
+    <h3>Weekly Overview</h3>
+    <div id="weeklyOverview" class="weekly-overview"></div>
+  </div>
+</div>
 
-  <!-- Decorative bottom yellow gradient -->
-  <div class="bottom-grad" aria-hidden="true"></div>
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  const userId = tg.initDataUnsafe?.user?.id || "demo-user";
+  let selectedIcon = '';
+  let data = JSON.parse(localStorage.getItem('habitsData') || '{}');
+  if (!data[userId]) data[userId] = { habits: [] };
 
-  <script>
-/* ==========================================
-   Daily Check-In — Vanilla JS (single file)
-   Design updated: yellow primary, black secondary, bottom gradient.
-   No back-end. Stores localStorage under key 'daily-checkin:data'
-   ========================================== */
-
-  // Helpers: date formatting
-  const toYMD = (d) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-  const parseYMD = (s) => {
-    const [y,m,d] = s.split('-').map(Number);
-    return new Date(y, m-1, d);
-  };
-  const addDays = (d, days) => {
-    const x = new Date(d);
-    x.setDate(x.getDate() + days);
-    return x;
-  };
-
-  // Storage & user
-  const STORAGE_KEY = 'daily-checkin:data';
-  let rawStorage = {};
-  let currentUserId = null;
-  let telegramWebApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-
-  function loadRawStorage(){
-    try{
-      const str = localStorage.getItem(STORAGE_KEY);
-      rawStorage = str ? JSON.parse(str) : {};
-    }catch(e){ rawStorage = {}; }
-  }
-  function saveRawStorage(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(rawStorage)); }catch(e){}
-  }
-  function ensureUserData(userId){
-    if(!rawStorage[userId]) rawStorage[userId] = { habits: [] };
-    return rawStorage[userId];
-  }
-
-  // UI helpers
-  function makeId(){ return String(Date.now().toString(36) + Math.random().toString(36).slice(2,7)); }
-  function showToast(msg, ms = 1400){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.display = 'block';
-    t.style.opacity = '1';
-    setTimeout(()=> {
-      t.style.transition = 'opacity 300ms';
-      t.style.opacity = '0';
-      setTimeout(()=> t.style.display = 'none', 320);
-    }, ms);
-  }
-
-  // Telegram safety wrappers
-  function telegramReadySafely(){ if(telegramWebApp && typeof telegramWebApp.ready === 'function'){ try{ telegramWebApp.ready(); }catch(e){} } }
-  function telegramExpandSafely(){ if(telegramWebApp && typeof telegramWebApp.expand === 'function'){ try{ telegramWebApp.expand(); }catch(e){} } }
-  function telegramHaptic(type='light'){
-    try{
-      if(telegramWebApp && telegramWebApp.HapticFeedback && telegramWebApp.HapticFeedback.impactOccurred) {
-        telegramWebApp.HapticFeedback.impactOccurred(type); return;
-      }
-      if(telegramWebApp && telegramWebApp.hapticFeedback && telegramWebApp.hapticFeedback.impactOccurred) {
-        telegramWebApp.hapticFeedback.impactOccurred(type); return;
-      }
-    }catch(e){ /* ignore */ }
-  }
-
-  // Streaks
-  function currentStreakFor(habit){
-    const set = new Set(habit.completions || []);
-    let streak = 0;
-    let day = new Date();
-    while(true){
-      const dayStr = toYMD(day);
-      if(set.has(dayStr)){ streak++; day = addDays(day, -1); } else break;
-    }
-    return streak;
-  }
-  function longestStreakFor(habit){
-    const arr = (habit.completions || []).slice().sort();
-    if(arr.length === 0) return 0;
-    let max = 1, cur = 1;
-    for(let i=1;i<arr.length;i++){
-      const diff = Math.round((parseYMD(arr[i]) - parseYMD(arr[i-1]))/(1000*60*60*24));
-      if(diff === 1) cur++;
-      else if(diff === 0) { /* duplicate */ }
-      else { max = Math.max(max, cur); cur = 1; }
-    }
-    max = Math.max(max, cur);
-    return max;
-  }
-
-  // Render functions
-  function renderHabits(){
-    const userData = ensureUserData(currentUserId);
+  function renderHabits() {
     const list = document.getElementById('habitList');
     list.innerHTML = '';
-    if(!userData.habits.length) document.getElementById('noHabits').style.display = 'block';
-    else document.getElementById('noHabits').style.display = 'none';
-
-    for(const h of userData.habits.slice().reverse()){
-      const el = document.createElement('div'); el.className='habit'; el.setAttribute('data-id', h.id);
-
-      const left = document.createElement('div'); left.className='left';
-      const icon = document.createElement('div'); icon.className='habit-icon'; icon.textContent = h.icon || '🔖';
-      const meta = document.createElement('div'); meta.className='habit-meta';
-      const title = document.createElement('h3'); title.textContent = h.name || '(no name)';
-      const sub = document.createElement('p'); sub.textContent = `Created ${h.createdAt} · ${h.completions?.length || 0} checks`;
-      meta.appendChild(title); meta.appendChild(sub);
-      left.appendChild(icon); left.appendChild(meta);
-
-      const right = document.createElement('div'); right.className='right';
-      const streakEl = document.createElement('div'); streakEl.className='streak';
-      streakEl.textContent = `🔥 ${currentStreakFor(h)} • 📈 ${longestStreakFor(h)}`;
-
-      const btnCheck = document.createElement('button'); btnCheck.className='check-btn'; btnCheck.textContent='Check In';
-      const todayStr = toYMD(new Date());
-      if((h.completions || []).includes(todayStr)){ btnCheck.disabled = true; btnCheck.textContent='Done'; }
-      btnCheck.addEventListener('click', ()=> handleCheckIn(h.id));
-
-      const editBtn = document.createElement('button'); editBtn.className='icon-btn'; editBtn.title='Edit'; editBtn.innerHTML='✏️';
-      editBtn.addEventListener('click', ()=> openEdit(h.id));
-      const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.title='Delete'; delBtn.innerHTML='🗑️';
-      delBtn.addEventListener('click', ()=> { if(confirm('Delete this habit? This will remove completions too.')) deleteHabit(h.id); });
-
-      right.appendChild(streakEl); right.appendChild(btnCheck); right.appendChild(editBtn); right.appendChild(delBtn);
-
-      el.appendChild(left); el.appendChild(right);
-      list.appendChild(el);
+    if (data[userId].habits.length === 0) {
+      list.innerHTML = '<p>No habits yet — add one using the button above.</p>';
+      return;
     }
-
-    renderGlobalStats();
-    renderWeek();
-  }
-
-  function renderGlobalStats(){
-    const userData = ensureUserData(currentUserId);
-    const all = userData.habits || [];
-    const longestAll = all.reduce((acc,h)=> Math.max(acc, longestStreakFor(h)), 0);
-    const totalHabits = all.length;
-    document.getElementById('globalStats').textContent = `Total habits: ${totalHabits} · Longest streak (any habit): ${longestAll} days`;
-  }
-
-  function renderWeek(){
-    const grid = document.getElementById('weekGrid'); grid.innerHTML='';
-    const userData = ensureUserData(currentUserId);
-    const habits = userData.habits || [];
-    const today = new Date(); const dow = today.getDay(); const sunday = addDays(today, -dow);
-    for(let i=0;i<7;i++){
-      const d = addDays(sunday, i); const dStr = toYMD(d);
-      const dayLabel = d.toLocaleDateString(undefined, {weekday:'short'});
-      const count = habits.reduce((acc,h) => acc + ((h.completions || []).includes(dStr) ? 1 : 0), 0);
-      const el = document.createElement('div'); el.className = 'day' + (count>0 ? ' done' : '');
-      el.innerHTML = `<div style="font-weight:700">${dayLabel}</div><div style="font-size:12px;margin-top:4px;">${dStr}</div><div class="dot" aria-hidden="true"></div><div class="count">${count} done</div>`;
-      grid.appendChild(el);
-    }
-  }
-
-  // Actions: add, edit, delete, check-in
-  function addHabit(name, icon){
-    const userData = ensureUserData(currentUserId);
-    const newH = { id: makeId(), name: name, icon: icon || '🔖', createdAt: toYMD(new Date()), completions: [] };
-    userData.habits.push(newH); saveRawStorage(); renderHabits();
-  }
-  function openEdit(habitId){
-    const userData = ensureUserData(currentUserId); const h = userData.habits.find(x=>x.id===habitId);
-    if(!h) return; document.getElementById('habitName').value = h.name; document.getElementById('habitIdHidden').value = h.id;
-    showToast('Editing habit — press Save', 1200); window.scrollTo({top:0,behavior:'smooth'});
-  }
-  function saveFromForm(){
-    const name = document.getElementById('habitName').value.trim();
-    const hid = document.getElementById('habitIdHidden').value;
-    const picked = document.querySelector('.emoji-picker button.selected');
-    const icon = picked ? picked.dataset.emoji : (document.querySelector('.emoji-picker button')?.dataset?.emoji || '🔖');
-    if(!name) return alert('Please enter a habit name.');
-    const userData = ensureUserData(currentUserId);
-    if(hid){
-      const h = userData.habits.find(x=>x.id===hid);
-      if(h){ h.name = name; h.icon = icon; saveRawStorage(); document.getElementById('habitIdHidden').value = ''; document.getElementById('habitName').value = ''; document.querySelectorAll('.emoji-picker button').forEach(b=>b.classList.remove('selected')); renderHabits(); showToast('Habit updated'); return; }
-    }
-    addHabit(name, icon);
-    document.getElementById('habitName').value = '';
-    document.querySelectorAll('.emoji-picker button').forEach(b=>b.classList.remove('selected'));
-    showToast('Habit added 🎉');
-  }
-  function deleteHabit(habitId){ const userData = ensureUserData(currentUserId); userData.habits = userData.habits.filter(h=>h.id !== habitId); saveRawStorage(); renderHabits(); }
-  function handleCheckIn(habitId){
-    const userData = ensureUserData(currentUserId); const h = userData.habits.find(x=>x.id===habitId); if(!h) return;
-    const today = toYMD(new Date()); if(!h.completions) h.completions = [];
-    if(h.completions.includes(today)){ showToast('Already checked in today'); return; }
-    h.completions.push(today); h.completions = Array.from(new Set(h.completions)).sort(); saveRawStorage(); renderHabits(); telegramHaptic('light'); showToast('Great job! 🎉', 1600);
-  }
-
-  function clearUserData(){ if(!confirm('Clear all local data for this user? This cannot be undone.')) return; rawStorage[currentUserId] = { habits: [] }; saveRawStorage(); renderHabits(); showToast('Data cleared'); }
-
-  // Init & event bindings
-  function initApp(){
-    loadRawStorage();
-
-    if(telegramWebApp && telegramWebApp.initDataUnsafe && telegramWebApp.initDataUnsafe.user && telegramWebApp.initDataUnsafe.user.id){
-      currentUserId = 'tg:' + telegramWebApp.initDataUnsafe.user.id;
-    } else {
-      currentUserId = 'local_guest';
-    }
-    ensureUserData(currentUserId);
-
-    // Apply Telegram color scheme (dark)
-    if(telegramWebApp && telegramWebApp.colorScheme === 'dark') document.documentElement.classList.add('tg-theme-dark');
-
-    // Telegram ready/expand
-    telegramReadySafely(); telegramExpandSafely();
-
-    // Bindings
-    document.getElementById('btnAdd').addEventListener('click', ()=> { document.getElementById('habitName').focus(); showToast('Type a name, pick an emoji, press Save'); });
-    document.getElementById('habitForm').addEventListener('submit', (e)=> { e.preventDefault(); saveFromForm(); });
-
-    document.querySelectorAll('.emoji-picker button').forEach(btn=>{
-      btn.addEventListener('click', (ev)=>{
-        document.querySelectorAll('.emoji-picker button').forEach(b=>b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
+    data[userId].habits.forEach(habit => {
+      const item = document.createElement('div');
+      item.className = 'habit-item';
+      item.innerHTML = `<span>${habit.icon} ${habit.name}</span>
+                        <button class="btn btn-yellow" onclick="checkIn('${habit.id}')">Check In</button>`;
+      list.appendChild(item);
     });
-
-    document.getElementById('btnClear').addEventListener('click', ()=> { clearUserData(); });
-
+  }
+  function renderWeeklyOverview() {
+    const overview = document.getElementById('weeklyOverview');
+    overview.innerHTML = '';
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      overview.innerHTML += `<div class="week-day">
+        <div>${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+        <small>${d.toISOString().slice(0,10)}</small>
+      </div>`;
+    }
+  }
+  function selectIcon(icon) { selectedIcon = icon; }
+  function saveHabit() {
+    const name = document.getElementById('habitName').value.trim();
+    if (!name || !selectedIcon) return alert('Please enter name & select icon');
+    data[userId].habits.push({ id: Date.now().toString(), name, icon: selectedIcon, completions: [] });
+    localStorage.setItem('habitsData', JSON.stringify(data));
+    document.getElementById('habitName').value = '';
+    selectedIcon = '';
     renderHabits();
   }
-
-  document.addEventListener('DOMContentLoaded', initApp);
-  </script>
+  function checkIn(id) {
+    const habit = data[userId].habits.find(h => h.id === id);
+    const today = new Date().toISOString().slice(0,10);
+    if (!habit.completions.includes(today)) {
+      habit.completions.push(today);
+      tg.HapticFeedback?.impactOccurred('light');
+      alert('Great job! 🎉');
+    }
+    localStorage.setItem('habitsData', JSON.stringify(data));
+  }
+  function clearData() {
+    if (confirm('Clear all data?')) {
+      data[userId] = { habits: [] };
+      localStorage.setItem('habitsData', JSON.stringify(data));
+      renderHabits();
+    }
+  }
+  renderHabits();
+  renderWeeklyOverview();
+</script>
 </body>
 </html>
